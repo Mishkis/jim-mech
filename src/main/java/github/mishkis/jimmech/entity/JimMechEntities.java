@@ -18,7 +18,7 @@ public class JimMechEntities {
                             .setDimensions(2F, 4F)
             );
 
-    public static final SerializableDataTicket<Float> MECH_ROTATION_DATA = GeckoLibUtil.addDataTicket(SerializableDataTicket.ofFloat(Identifier.of(JimMech.MOD_ID, "mech_rotation_data")));
+    public static final SerializableDataTicket<Float> MECH_PELVIS_ROTATION_DATA = GeckoLibUtil.addDataTicket(SerializableDataTicket.ofFloat(Identifier.of(JimMech.MOD_ID, "mech_pelvis_rotation_data")));
 
     private static <T extends Entity> EntityType<T> register(String id, EntityType.Builder<T> type) {
         return Registry.register(Registries.ENTITY_TYPE, Identifier.of(JimMech.MOD_ID, id), type.build(id));

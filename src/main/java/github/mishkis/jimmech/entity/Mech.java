@@ -43,6 +43,7 @@ public class Mech extends Entity implements GeoEntity {
 
     // Used for rotating model
     private float pelvis_rotation = 0;
+    private float torso_rotation = 0;
 
     @Override
     protected boolean canAddPassenger(Entity passenger) {
@@ -75,14 +76,20 @@ public class Mech extends Entity implements GeoEntity {
     @Override
     public void tick() {
         super.tick();
-        if (this.getControllingPassenger() instanceof PlayerEntity player && (player.forwardSpeed != 0 || player.sidewaysSpeed != 0)) {
-            float rot = player.headYaw * MathHelper.PI / 180F;
-            rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
-            Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
 
-            this.setVelocity(rotVec.multiply(0.3));
-        } else {
-            this.setVelocity(this.getVelocity().multiply(0.4));
+        this.setVelocity(this.getVelocity().multiply(0.4));
+
+        if (this.getControllingPassenger() instanceof PlayerEntity player) {
+            if (player.forwardSpeed != 0 || player.sidewaysSpeed != 0) {
+                float rot = player.headYaw * MathHelper.PI / 180F;
+                rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
+                Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
+
+                this.setVelocity(rotVec.multiply(0.3));
+            }
+
+            this.setYaw(MathHelper.lerpAngleDegrees(0.2F, this.getYaw(), player.getHeadYaw()));
+            player.setBodyYaw(this.getYaw());
         }
 
         this.move(MovementType.SELF, this.getVelocity());
@@ -114,7 +121,7 @@ public class Mech extends Entity implements GeoEntity {
         controllerRegistrar.add(new AnimationController<GeoAnimatable>(this, (animationState) -> {
             // Converting from radians to degrees and back to radians. Thanks minecraft.
             pelvis_rotation = MathHelper.lerpAngleDegrees(0.1F, pelvis_rotation * MathHelper.DEGREES_PER_RADIAN, ((float) MathHelper.atan2(this.getVelocity().x, this.getVelocity().z)) * MathHelper.DEGREES_PER_RADIAN) * MathHelper.RADIANS_PER_DEGREE;
-            animationState.setData(JimMechEntities.MECH_ROTATION_DATA, pelvis_rotation);
+            animationState.setData(JimMechEntities.MECH_PELVIS_ROTATION_DATA, pelvis_rotation);
 
             return animationState.setAndContinue(RawAnimation.begin());
         }));
