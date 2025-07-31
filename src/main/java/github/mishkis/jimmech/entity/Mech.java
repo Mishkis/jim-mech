@@ -29,6 +29,8 @@ import java.util.Map;
 
 public class Mech extends Entity implements GeoEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    // Called in mech geo model to offset
+    public static final RawAnimation STAND_ANIMATION = RawAnimation.begin().thenPlay("misc.stand");
 
     public Mech(EntityType<?> type, World world) {
         super(type, world);
@@ -51,9 +53,18 @@ public class Mech extends Entity implements GeoEntity {
 
     // Used to bob model up and down, can't be done as keyframes due to needing to also move player on server side
     private float ticks_walking = 0;
+    private float start_ride_tick = 0;
 
     public float getBobOffset(float partial_tick) {
-        return 0.25F * MathHelper.abs(MathHelper.sin((ticks_walking + partial_tick) * MathHelper.PI / 20));
+        RawAnimation current = getAnimatableInstanceCache().getManagerForId(getId()).getAnimationControllers().get("main").getCurrentRawAnimation();
+
+        if (current == DefaultAnimations.WALK) {
+            return 0.25F * MathHelper.abs(MathHelper.sin((ticks_walking + partial_tick) * MathHelper.PI / 20));
+        } else if (current == STAND_ANIMATION) {
+            return (float)(-Math.pow(2-(age - start_ride_tick + partial_tick)/20F, 2F) * 3)/16F;
+        }
+
+        return 0;
     }
 
     @Override
@@ -74,8 +85,12 @@ public class Mech extends Entity implements GeoEntity {
 
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
-        if (!this.getWorld().isClient) {
-            player.startRiding(this);
+        if (player.startRiding(this)) {
+            start_ride_tick = age;
+
+            if (!this.getWorld().isClient) {
+                triggerAnim("main", "stand");
+            }
         }
         return ActionResult.SUCCESS;
     }
@@ -96,19 +111,24 @@ public class Mech extends Entity implements GeoEntity {
         this.setVelocity(this.getVelocity().multiply(0.4));
 
         if (this.getControllingPassenger() instanceof PlayerEntity player) {
-            if (shouldMove(player)) {
-                float rot = player.headYaw * MathHelper.PI / 180F;
-                rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
-                Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
+            if (age - start_ride_tick >= 40) {
+                if (shouldMove(player)) {
+                    float rot = player.headYaw * MathHelper.PI / 180F;
+                    rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
+                    Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
 
-                this.setVelocity(rotVec.multiply(0.4));
+                    this.setVelocity(rotVec.multiply(0.4));
 
-                ticks_walking++;
+                    ticks_walking++;
+                } else {
+                    ticks_walking = 0;
+                }
+
+                this.setYaw(MathHelper.lerpAngleDegrees(0.2F, this.getYaw(), player.getHeadYaw()));
             } else {
-                ticks_walking = 0;
+                player.setYaw(this.getYaw());
             }
 
-            this.setYaw(MathHelper.lerpAngleDegrees(0.2F, this.getYaw(), player.getHeadYaw()));
             player.setBodyYaw(this.getYaw());
         }
 
@@ -144,14 +164,19 @@ public class Mech extends Entity implements GeoEntity {
                 // Converting from radians to degrees and back to radians. Thanks minecraft.
                 pelvis_rotation = MathHelper.lerpAngleDegrees(0.1F, pelvis_rotation * MathHelper.DEGREES_PER_RADIAN, ((float) MathHelper.atan2(this.getVelocity().x, this.getVelocity().z)) * MathHelper.DEGREES_PER_RADIAN) * MathHelper.RADIANS_PER_DEGREE;
             }
+
+            if (!this.hasPassengers()) {
+                return animationState.setAndContinue(DefaultAnimations.SIT);
+            }
+
             animationState.setData(JimMechEntities.MECH_PELVIS_ROTATION_DATA, pelvis_rotation);
 
             if (this.getControllingPassenger() instanceof PlayerEntity player && shouldMove(player)) {
                 return animationState.setAndContinue(DefaultAnimations.WALK);
             }
 
-            return PlayState.STOP;
-        }));
+            return animationState.setAndContinue(DefaultAnimations.IDLE);
+        }).triggerableAnim("stand", STAND_ANIMATION));
     }
 
     @Override

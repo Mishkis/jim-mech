@@ -11,6 +11,7 @@ import net.minecraft.util.math.MathHelper;
 import org.apache.logging.log4j.core.Core;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.constant.DefaultAnimations;
 import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.model.DefaultedEntityGeoModel;
@@ -28,14 +29,18 @@ public class MechGeoModel<T extends GeoEntity> extends DefaultedEntityGeoModel<T
         torso.setRotY((float) torso_rotation);
 
         CoreGeoBone pelvis = getAnimationProcessor().getBone("Pelvis");
-        float pelvis_rotation = animationState.getData(JimMechEntities.MECH_PELVIS_ROTATION_DATA);
-        pelvis.setRotY(pelvis_rotation);
+        Float pelvis_rotation = animationState.getData(JimMechEntities.MECH_PELVIS_ROTATION_DATA);
+        if (pelvis_rotation != null) {
+            pelvis.setRotY(pelvis_rotation);
+        } else {
+            pelvis.setRotY(torso_rotation);
+        }
 
         CoreGeoBone mech = getAnimationProcessor().getBone("Mech");
-        if (animatable.getControllingPassenger() instanceof PlayerEntity player && animatable.shouldMove(player)) {
+        if (animationState.isCurrentAnimation(DefaultAnimations.WALK) || animationState.isCurrentAnimation(Mech.STAND_ANIMATION)) {
             // Multiplied by 16 to convert from block to local space
             mech.setPosY(16 * animatable.getBobOffset(-(1-animationState.getPartialTick())));
-        } else {
+        } else if (!animationState.isCurrentAnimation(DefaultAnimations.SIT)) {
             mech.setPosY(0);
         }
     }
