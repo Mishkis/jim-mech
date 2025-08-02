@@ -199,14 +199,14 @@
 							"vector": [-7.5, 0, 0]
 						},
 						"0.5": {
-							"vector": [-28.64293, -12.27659, -12.56853],
+							"vector": [-29.9328, 8.87991, 8.86797],
 							"easing": "easeInOutQuad"
 						},
 						"1.0": {
 							"vector": [-22.5, 0, 0]
 						},
 						"1.5": {
-							"vector": [-48.64293, -12.27659, -12.56853],
+							"vector": [-49.02109, 7.96769, -2.69036],
 							"easing": "easeInOutQuad"
 						},
 						"2.0": {
@@ -306,7 +306,7 @@
 							"vector": [0, 0, 0]
 						},
 						"2.0": {
-							"vector": [-21.99994, -4.12052, -8.82021]
+							"vector": [-21.46695, 0.88838, -3.27674]
 						}
 					}
 				},
@@ -316,7 +316,7 @@
 							"vector": [0, 0, 0]
 						},
 						"2.0": {
-							"vector": [0, 0, 20]
+							"vector": [0, 0, -7.5]
 						}
 					}
 				},
@@ -348,7 +348,7 @@
 							"vector": [0, 0, 0]
 						},
 						"2.0": {
-							"vector": [-26.32862, -15.27595, -14.33751],
+							"vector": [-18.54746, 10.58499, 14.11736],
 							"easing": "easeInQuint"
 						}
 					}
@@ -381,7 +381,7 @@
 							"vector": [0, 0, 0]
 						},
 						"2.0": {
-							"vector": [-12.5, 0, 0],
+							"vector": [5, 0, 0],
 							"easing": "easeInQuint"
 						}
 					}
@@ -402,7 +402,7 @@
 							"vector": [0, 0, 0]
 						},
 						"2.0": {
-							"vector": [-5, 0, -7.5]
+							"vector": [-3.88172, 6.71771, 11.38172]
 						}
 					}
 				},
@@ -511,7 +511,7 @@
 				"LeftArm": {
 					"rotation": {
 						"0.0": {
-							"vector": [-21.99994, -4.12052, -8.82021]
+							"vector": [-21.46695, 0.88838, -3.27674]
 						},
 						"2.0": {
 							"vector": [0, 0, 0]
@@ -521,7 +521,7 @@
 				"Forearm": {
 					"rotation": {
 						"0.0": {
-							"vector": [0, 0, 20]
+							"vector": [0, 0, -7.5]
 						},
 						"2.0": {
 							"vector": [0, 0, 0]
@@ -553,7 +553,7 @@
 				"RightFinger": {
 					"rotation": {
 						"0.0": {
-							"vector": [-26.32862, -15.27595, -14.33751],
+							"vector": [-18.54746, 10.58499, 14.11736],
 							"easing": "easeInQuint"
 						},
 						"2.0": {
@@ -607,7 +607,7 @@
 				"Forearm2": {
 					"rotation": {
 						"0.0": {
-							"vector": [-5, 0, -7.5]
+							"vector": [-3.88172, 6.71771, 11.38172]
 						},
 						"2.0": {
 							"vector": [0, 0, 0]
@@ -860,6 +860,132 @@
 						},
 						"5.0": {
 							"vector": [0, 0, 0]
+						}
+					}
+				}
+			}
+		},
+		"attack.start_machine_gun": {
+			"animation_length": 5,
+			"bones": {
+				"RightArm": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"1.0": {
+							"vector": [-90, 0, 0],
+							"easing": "easeInElastic"
+						}
+					}
+				},
+				"Forearm2": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"1.0": {
+							"vector": [15, 0, 17.5]
+						}
+					}
+				},
+				"Barrel": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"4.0": {
+							"vector": [0, -720, 0],
+							"easing": "easeInQuart"
+						},
+						"5.0": {
+							"vector": [0, -1440, 0],
+							"easing": "linear"
+						}
+					}
+				}
+			}
+		},
+		"attack.shoot_machine_gun": {
+			"loop": true,
+			"animation_length": 1,
+			"bones": {
+				"RightArm": {
+					"rotation": {
+						"vector": [-90, 0, 0],
+						"easing": "easeInElastic"
+					}
+				},
+				"Forearm2": {
+					"rotation": {
+						"vector": [15, 0, -17.5]
+					}
+				},
+				"Barrel": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, -1440, 0],
+							"easing": "linear"
+						},
+						"1.0": {
+							"vector": [0, -2160, 0],
+							"easing": "linear"
+						}
+					}
+				}
+			}
+		},
+		"attack.stop_machine_gun_hands": {
+			"animation_length": 1,
+			"bones": {
+				"RightArm": {
+					"rotation": {
+						"0.0": {
+							"vector": [-90, 0, 0],
+							"easing": "easeInElastic"
+						},
+						"1.0": {
+							"vector": [0, 0, 0],
+							"easing": "easeInElastic"
+						}
+					}
+				},
+				"Forearm2": {
+					"rotation": {
+						"0.0": {
+							"vector": [15, 0, -17.5]
+						},
+						"1.0": {
+							"vector": [0, 0, 0]
+						}
+					}
+				},
+				"Barrel": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, -720, 0],
+							"easing": "easeInQuart"
+						},
+						"1.0": {
+							"vector": [0, -1440, 0],
+							"easing": "linear"
+						}
+					}
+				}
+			}
+		},
+		"attack.stop_machine_gun": {
+			"animation_length": 4,
+			"bones": {
+				"Barrel": {
+					"rotation": {
+						"0.0": {
+							"vector": [0, -1440, 0],
+							"easing": "linear"
+						},
+						"4.0": {
+							"vector": [0, 0, 0],
+							"easing": "easeOutQuart"
 						}
 					}
 				}

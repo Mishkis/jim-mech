@@ -6,5 +6,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 public class JimMechEntityRenderers {
     public static void initialize() {
         EntityRendererRegistry.register(JimMechEntities.MECH, MechRenderer::new);
+        EntityRendererRegistry.register(JimMechEntities.BULLET, BulletRenderer::new);
     }
 }

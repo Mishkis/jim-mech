@@ -17,6 +17,12 @@ public class JimMechEntities {
                     EntityType.Builder.create(Mech::new, SpawnGroup.MISC)
                             .setDimensions(2F, 4F)
             );
+    public static final EntityType<Bullet> BULLET =
+            register(
+                    "bullet",
+                    EntityType.Builder.create(Bullet::new, SpawnGroup.MISC)
+                            .setDimensions(0.125F, 0.125F)
+            );
 
     public static final SerializableDataTicket<Float> MECH_PELVIS_ROTATION_DATA = GeckoLibUtil.addDataTicket(SerializableDataTicket.ofFloat(Identifier.of(JimMech.MOD_ID, "mech_pelvis_rotation_data")));
 
