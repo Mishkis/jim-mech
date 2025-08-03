@@ -7,5 +7,6 @@ public class JimMechClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         JimMechEntityRenderers.initialize();
+        JimMechParticleRenderer.initialize();
     }
 }

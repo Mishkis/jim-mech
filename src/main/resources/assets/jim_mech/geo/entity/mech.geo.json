@@ -7,8 +7,8 @@
 				"texture_width": 256,
 				"texture_height": 256,
 				"visible_bounds_width": 6,
-				"visible_bounds_height": 6.5,
-				"visible_bounds_offset": [0, 2.75, 0]
+				"visible_bounds_height": 5.5,
+				"visible_bounds_offset": [0, 2.25, 0]
 			},
 			"bones": [
 				{
@@ -46,6 +46,16 @@
 					"cubes": [
 						{"origin": [-6.5, 60, -8.2], "size": [13.1, 2, 11.5], "pivot": [0, 46.5, -3.7], "rotation": [-25, 0, 0], "uv": [108, 0]}
 					]
+				},
+				{
+					"name": "Thruster1",
+					"parent": "Torso",
+					"pivot": [-7, 23.5, 10.4]
+				},
+				{
+					"name": "Thruster2",
+					"parent": "Torso",
+					"pivot": [7, 23.5, 10.4]
 				},
 				{
 					"name": "LeftArm",

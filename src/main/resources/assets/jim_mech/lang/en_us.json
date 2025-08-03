@@ -1,3 +1,5 @@
 {
-  "entity.jim_mech.mech": "Mech"
+  "entity.jim_mech.mech": "Mech",
+  "entity.jim_mech.bullet": "Bullet",
+  "entity.jim_mech.thrown_block": "Thrown Block"
 }

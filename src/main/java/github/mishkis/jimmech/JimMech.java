@@ -13,5 +13,6 @@ public class JimMech implements ModInitializer {
     public void onInitialize() {
         LOGGER.info("Starting jim mech mod :)");
         JimMechEntities.initialize();
+        JimMechParticles.initialize();
     }
 }

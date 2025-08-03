@@ -18,6 +18,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
@@ -74,6 +75,7 @@ public class Mech extends Entity implements GeoEntity {
     private float start_charge_tick = 0;
     private float charge_ticks = Float.POSITIVE_INFINITY;
 
+    private boolean flying = false;
     private float grounded_ticks = 0;
 
     private BlockState held_block;
@@ -213,6 +215,7 @@ public class Mech extends Entity implements GeoEntity {
                 }
 
                 if (((LivingEntityAccessor) player).getJumping()) {
+                    flying = true;
                     this.setVelocity(this.getVelocity().multiply(0.6, 0, 0.6).add(0, 0.2, 0));
                 }
 
@@ -231,13 +234,11 @@ public class Mech extends Entity implements GeoEntity {
 
                     float dist = 2;
                     float radian_yaw = -this.getYaw() * MathHelper.RADIANS_PER_DEGREE;
-                    Vec3d rot_vec = new Vec3d(-MathHelper.cos(radian_yaw), 0., MathHelper.sin(radian_yaw)).multiply(dist).add(this.getPos()).add(0., 3.2, 0);
+                    Vec3d start_pos = new Vec3d(-MathHelper.cos(radian_yaw), 0., MathHelper.sin(radian_yaw)).multiply(dist).add(this.getPos()).add(0., 3.2, 0);
+                    Vec3d rot_vec = hit.subtract(start_pos).normalize();
 
                     Bullet bullet = new Bullet(JimMechEntities.BULLET, this.getWorld());
-                    bullet.setPosition(rot_vec.x + (random.nextFloat() - 0.5) / 1.2, rot_vec.y + (random.nextFloat() - 0.5) / 1.2, rot_vec.z + (random.nextFloat() - 0.5) / 1.2);
-
-                    rot_vec = hit.subtract(rot_vec).normalize();
-
+                    bullet.setPosition(start_pos.x + (random.nextFloat() - 0.5) / 1.2, start_pos.y + (random.nextFloat() - 0.5) / 1.2, start_pos.z + (random.nextFloat() - 0.5) / 1.2);
                     bullet.setVelocity(rot_vec.multiply(1.5).multiply(0.5 + random.nextFloat()));
                     bullet.setOwner(player);
                     ProjectileUtil.setRotationFromVelocity(bullet, 1);
@@ -289,6 +290,7 @@ public class Mech extends Entity implements GeoEntity {
             grounded_ticks = 0;
         }
 
+        flying = false;
         return false;
     }
 
@@ -328,7 +330,7 @@ public class Mech extends Entity implements GeoEntity {
 
             animationState.setData(JimMechEntities.MECH_PELVIS_ROTATION_DATA, pelvis_rotation);
 
-            if (this.getVelocity().y != 0) {
+            if (flying) {
                 return animationState.setAndContinue(DefaultAnimations.FLY);
             }
 
