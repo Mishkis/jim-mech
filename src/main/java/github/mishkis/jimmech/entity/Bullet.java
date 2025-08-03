@@ -88,7 +88,7 @@ public class Bullet extends ProjectileEntity implements GeoEntity {
 
     @Override
     protected void onEntityHit(EntityHitResult entityHitResult) {
-        entityHitResult.getEntity().damage(this.getDamageSources().playerAttack((PlayerEntity) this.getOwner()), 2);
+        entityHitResult.getEntity().damage(this.getDamageSources().playerAttack((PlayerEntity) this.getOwner()), 5);
 
         this.discard();
     }

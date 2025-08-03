@@ -7,8 +7,8 @@
 				"texture_width": 256,
 				"texture_height": 256,
 				"visible_bounds_width": 6,
-				"visible_bounds_height": 5.5,
-				"visible_bounds_offset": [0, 2.25, 0]
+				"visible_bounds_height": 6.5,
+				"visible_bounds_offset": [0, 2.75, 0]
 			},
 			"bones": [
 				{
@@ -126,6 +126,12 @@
 					"cubes": [
 						{"origin": [24.53845, 12.18941, -5.14308], "size": [2.7, 5, 3], "pivot": [26.03845, 27.68941, -1.14308], "rotation": [0, 0, -12.5], "uv": [186, 39], "mirror": true}
 					]
+				},
+				{
+					"name": "Block",
+					"parent": "Forearm",
+					"pivot": [28.1, 16.5, 0.3],
+					"rotation": [54.73561, -30, -35.26439]
 				},
 				{
 					"name": "RightArm",
