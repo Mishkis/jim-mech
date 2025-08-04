@@ -2,6 +2,9 @@ package github.mishkis.jimmech.entity;
 
 import github.mishkis.jimmech.JimMech;
 import github.mishkis.jimmech.mixin.LivingEntityAccessor;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -12,25 +15,23 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.packet.c2s.play.BoatPaddleStateC2SPacket;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
-import net.minecraft.util.math.random.Random;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2i;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.constant.DataTickets;
 import software.bernie.geckolib.constant.DefaultAnimations;
 import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.ClientUtils;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.Map;
@@ -45,6 +46,14 @@ public class Mech extends Entity implements GeoEntity {
     public static final RawAnimation LAND_ANIMATION = RawAnimation.begin().thenPlay("move.land");
     // Public as it is called in mech geo model to offset
     public static final RawAnimation STAND_ANIMATION = RawAnimation.begin().thenPlay("misc.stand");
+
+    private double clientX;
+    private double clientY;
+    private double clientZ;
+    private double clientYaw;
+    private double clientPitch;
+    private Vec3d clientVelocity;
+    private int interpolation_steps;
 
     public Mech(EntityType<?> type, World world) {
         super(type, world);
@@ -147,40 +156,45 @@ public class Mech extends Entity implements GeoEntity {
 
     @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
+        ActionResult result = ActionResult.FAIL;
+
         if (this.getControllingPassenger() == player) {
             if (held_block == null) {
                 if (shoot_ticks == 0) {
                     start_shoot_tick = age;
                     shoot_ticks = 4;
 
-                    return ActionResult.SUCCESS;
+                    result = ActionResult.SUCCESS;
+                } else {
+                    shoot_ticks++;
+
+                    result = ActionResult.CONSUME;
                 }
-                shoot_ticks++;
             } else {
                 if (charge_ticks == Float.POSITIVE_INFINITY) {
                     start_charge_tick = age;
-                    charge_ticks = 1;
+                    charge_ticks = 2;
 
-                    return ActionResult.SUCCESS;
+                    result = ActionResult.SUCCESS;
+                } else {
+                    charge_ticks++;
+
+                    result = ActionResult.CONSUME;
+                }
+            }
+        } else {
+            if (player.startRiding(this)) {
+                start_ride_tick = age;
+
+                if (!this.getWorld().isClient) {
+                    triggerAnim("main", "stand");
                 }
 
-                charge_ticks++;
+                result = ActionResult.SUCCESS;
             }
-
-            return ActionResult.CONSUME;
         }
 
-        if (player.startRiding(this)) {
-            start_ride_tick = age;
-
-            if (!this.getWorld().isClient) {
-                triggerAnim("main", "stand");
-            }
-
-            return ActionResult.SUCCESS;
-        }
-
-        return ActionResult.FAIL;
+        return result;
     }
 
     public boolean shouldMove(PlayerEntity player) {
@@ -191,37 +205,67 @@ public class Mech extends Entity implements GeoEntity {
     public void tick() {
         super.tick();
 
+        // Taken from the minecart code lol
+        if (this.getWorld().isClient()) {
+            if (this.interpolation_steps > 0) {
+                double d = this.getX() + (this.clientX - this.getX()) / this.interpolation_steps;
+                double e = this.getY() + (this.clientY - this.getY()) / this.interpolation_steps;
+                double f = this.getZ() + (this.clientZ - this.getZ()) / this.interpolation_steps;
+                double g = MathHelper.wrapDegrees(this.clientYaw - this.getYaw());
+                this.setYaw(this.getYaw() + (float)g / this.interpolation_steps);
+                this.setPitch(this.getPitch() + (float)(this.clientPitch - this.getPitch()) / this.interpolation_steps);
+                this.interpolation_steps--;
+
+                this.setPosition(d, e, f);
+                this.setRotation(this.getYaw(), this.getPitch());
+            } else {
+                this.refreshPosition();
+                this.setRotation(this.getYaw(), this.getPitch());
+            }
+        }
+
         this.setVelocity(this.getVelocity().multiply(0.4, 1, 0.4));
 
         grounded_ticks++;
         if (!this.groundCollision) {
-            this.setVelocity(this.getVelocity().subtract(0,0.1,0));
+            this.setVelocity(this.getVelocity().subtract(0,0.05,0));
         } else {
             this.setVelocity(this.getVelocity().multiply(1, 0, 1));
         }
 
         if (this.getControllingPassenger() instanceof PlayerEntity player) {
             if (age - start_ride_tick >= 40 && grounded_ticks > 25) {
-                if (shouldMove(player)) {
-                    float rot = player.headYaw * MathHelper.PI / 180F;
-                    rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
-                    Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
+                if (this.isLogicalSideForUpdatingMovement()) {
+                    if (shouldMove(player)) {
+                        float rot = player.headYaw * MathHelper.PI / 180F;
+                        rot += ROT_MAP.get(new Vector2i(MathHelper.sign(player.forwardSpeed), MathHelper.sign(player.sidewaysSpeed)));
+                        Vec3d rotVec = new Vec3d(MathHelper.sin(-rot), 0., MathHelper.cos(rot));
 
-                    this.setVelocity(rotVec.multiply(0.4).add(0, this.getVelocity().y, 0));
+                        this.setVelocity(rotVec.multiply(0.4).add(0, this.getVelocity().y, 0));
 
-                    ticks_walking++;
-                } else {
-                    ticks_walking = 0;
-                }
+                        ticks_walking++;
+                    } else {
+                        ticks_walking = 0;
+                    }
 
-                if (((LivingEntityAccessor) player).getJumping()) {
+                    if (((LivingEntityAccessor) player).getJumping()) {
+                        this.setVelocity(this.getVelocity().multiply(0.6, 0, 0.6).add(0, 0.2, 0));
+                    }
+
+                    this.setYaw(MathHelper.lerpAngleDegrees(0.2F, this.getYaw(), player.getHeadYaw()));
+                } else if (!this.getWorld().isClient() && ((LivingEntityAccessor) player).getJumping()) {
                     flying = true;
-                    this.setVelocity(this.getVelocity().multiply(0.6, 0, 0.6).add(0, 0.2, 0));
                 }
-
-                this.setYaw(MathHelper.lerpAngleDegrees(0.2F, this.getYaw(), player.getHeadYaw()));
             } else {
                 player.setYaw(this.getYaw());
+
+                if (ClientUtils.getClientPlayer() != player) {
+                    if (MathHelper.abs((float) (clientX - this.getX())) >= 0.1 || MathHelper.abs((float) (clientZ - this.getZ())) >= 0.1) {
+                        ticks_walking++;
+                    } else {
+                        ticks_walking = 0;
+                    }
+                }
             }
 
             player.setBodyYaw(this.getYaw());
@@ -276,9 +320,27 @@ public class Mech extends Entity implements GeoEntity {
 
                 this.held_block = null;
             }
+
         }
 
-        this.move(MovementType.SELF, this.getVelocity());
+        velocityDirty = true;
+        if (this.isLogicalSideForUpdatingMovement()) {
+            this.move(MovementType.SELF, this.getVelocity());
+        }
+
+        if (!this.getWorld().isClient()) {
+            PacketByteBuf buf = PacketByteBufs.create();
+            buf.writeInt(this.getId())
+                    .writeInt(age)
+                    .writeFloat(start_shoot_tick).writeFloat(shoot_ticks)
+                    .writeFloat(start_charge_tick).writeFloat(charge_ticks).writeInt(Block.getRawIdFromState(held_block))
+                    .writeFloat(start_ride_tick)
+                    .writeBoolean(flying).writeFloat(grounded_ticks);
+
+            for (ServerPlayerEntity playerEntity : PlayerLookup.tracking(this)) {
+                ServerPlayNetworking.send(playerEntity, JimMechEntities.MECH_PACKET_ID, buf);
+            }
+        }
     }
 
     @Override
@@ -292,6 +354,36 @@ public class Mech extends Entity implements GeoEntity {
 
         flying = false;
         return false;
+    }
+
+    @Override
+    public void updateTrackedPositionAndAngles(double x, double y, double z, float yaw, float pitch, int interpolationSteps, boolean interpolate) {
+        this.clientX = x;
+        this.clientY = y;
+        this.clientZ = z;
+        this.clientYaw = yaw;
+        this.clientPitch = pitch;
+        this.interpolation_steps = interpolationSteps;
+    }
+
+    public void updateMechClient(int age, float start_shoot_tick, float shoot_ticks, float start_charge_tick, float charge_ticks, BlockState held_block, float start_ride_tick, boolean flying, float grounded_ticks) {
+        this.age = age;
+
+        this.start_shoot_tick = start_shoot_tick;
+        this.shoot_ticks = shoot_ticks;
+
+        this.start_charge_tick = start_charge_tick;
+        this.charge_ticks = charge_ticks;
+        if (!held_block.isAir()) {
+            this.held_block = held_block;
+        } else {
+            this.held_block = null;
+        }
+
+        this.start_ride_tick = start_ride_tick;
+
+        this.flying = flying;
+        this.grounded_ticks = grounded_ticks;
     }
 
     @Nullable
@@ -318,12 +410,6 @@ public class Mech extends Entity implements GeoEntity {
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllerRegistrar) {
         controllerRegistrar.add(new AnimationController<GeoAnimatable>(this, "main", (animationState) -> {
-            // I should probably refactor this to work like torso rotation, but can't be bothered right now
-            if (MathHelper.abs((float) this.getVelocity().x) + MathHelper.abs((float) this.getVelocity().y) >= 0.01) {
-                // Converting from radians to degrees and back to radians. Thanks minecraft.
-                pelvis_rotation = MathHelper.lerpAngleDegrees(0.1F, pelvis_rotation * MathHelper.DEGREES_PER_RADIAN, ((float) MathHelper.atan2(this.getVelocity().x, this.getVelocity().z)) * MathHelper.DEGREES_PER_RADIAN) * MathHelper.RADIANS_PER_DEGREE;
-            }
-
             if (!this.hasPassengers()) {
                 return animationState.setAndContinue(DefaultAnimations.SIT);
             }
@@ -334,10 +420,18 @@ public class Mech extends Entity implements GeoEntity {
                 return animationState.setAndContinue(DefaultAnimations.FLY);
             }
 
-            if (this.getControllingPassenger() instanceof PlayerEntity player && shouldMove(player)) {
+            if (ClientUtils.getClientPlayer() == this.getControllingPassenger() ?
+                    this.getControllingPassenger() instanceof PlayerEntity player && shouldMove(player) :
+                    MathHelper.abs((float) (clientX - this.getX())) >= 0.1 || MathHelper.abs((float) (clientZ - this.getZ())) >= 0.1) {
+
+                // Converting from radians to degrees and back to radians. Thanks minecraft.
+                if (ClientUtils.getClientPlayer() == this.getControllingPassenger()) {
+                    pelvis_rotation = MathHelper.lerpAngleDegrees(0.1F, pelvis_rotation * MathHelper.DEGREES_PER_RADIAN, ((float) MathHelper.atan2(this.getVelocity().x, this.getVelocity().z)) * MathHelper.DEGREES_PER_RADIAN) * MathHelper.RADIANS_PER_DEGREE;
+                } else {
+                    pelvis_rotation = MathHelper.lerpAngleDegrees(0.1F, pelvis_rotation * MathHelper.DEGREES_PER_RADIAN, ((float) MathHelper.atan2(clientX - this.getX(), clientZ - this.getZ())) * MathHelper.DEGREES_PER_RADIAN) * MathHelper.RADIANS_PER_DEGREE;
+                }
                 return animationState.setAndContinue(DefaultAnimations.WALK);
             }
-
             return animationState.setAndContinue(DefaultAnimations.IDLE);
         }).triggerableAnim("stand", STAND_ANIMATION).triggerableAnim("land", LAND_ANIMATION));
 
@@ -356,6 +450,11 @@ public class Mech extends Entity implements GeoEntity {
 
             return animationState.setAndContinue(MACHINE_GUN_STOP_SHOOT_ANIMATION);
         }).triggerableAnim("throw", THROW_ANIMATION));
+    }
+
+    @Override
+    public Vec3d updatePassengerForDismount(LivingEntity passenger) {
+        return new Vec3d(this.getX(), this.getBoundingBox().maxY - 3, this.getZ());
     }
 
     @Override

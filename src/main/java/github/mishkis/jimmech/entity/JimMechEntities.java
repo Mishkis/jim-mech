@@ -32,6 +32,8 @@ public class JimMechEntities {
 
     public static final SerializableDataTicket<Float> MECH_PELVIS_ROTATION_DATA = GeckoLibUtil.addDataTicket(SerializableDataTicket.ofFloat(Identifier.of(JimMech.MOD_ID, "mech_pelvis_rotation_data")));
 
+    public static final Identifier MECH_PACKET_ID = Identifier.of(JimMech.MOD_ID, "mech_packet_id");
+
     private static <T extends Entity> EntityType<T> register(String id, EntityType.Builder<T> type) {
         return Registry.register(Registries.ENTITY_TYPE, Identifier.of(JimMech.MOD_ID, id), type.build(id));
     }
