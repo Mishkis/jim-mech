@@ -1,6 +1,7 @@
 package github.mishkis.jimmech;
 
 import github.mishkis.jimmech.entity.JimMechEntities;
+import github.mishkis.jimmech.item.JimMechItems;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,5 +15,6 @@ public class JimMech implements ModInitializer {
         LOGGER.info("Starting jim mech mod :)");
         JimMechEntities.initialize();
         JimMechParticles.initialize();
+        JimMechItems.initialize();
     }
 }

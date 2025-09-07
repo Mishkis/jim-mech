@@ -1,6 +1,8 @@
 package github.mishkis.jimmech.entity;
 
 import github.mishkis.jimmech.JimMech;
+import github.mishkis.jimmech.item.JimMechItems;
+import github.mishkis.jimmech.item.MechItem;
 import github.mishkis.jimmech.mixin.LivingEntityAccessor;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -14,6 +16,7 @@ import net.minecraft.entity.MovementType;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -76,7 +79,7 @@ public class Mech extends Entity implements GeoEntity {
 
     // Used to bob model up and down, can't be done as keyframes due to needing to also move player on server side
     private float ticks_walking = 0;
-    private float start_ride_tick = 0;
+    public float start_ride_tick = 0;
 
     private float start_shoot_tick = 0;
     private float shoot_ticks = 0;
@@ -155,6 +158,14 @@ public class Mech extends Entity implements GeoEntity {
     }
 
     @Override
+    public boolean damage(DamageSource source, float amount) {
+        if (this.getControllingPassenger() instanceof PlayerEntity player && source.getAttacker() != player) {
+            player.damage(source, amount/10);
+        }
+        return super.damage(source, amount);
+    }
+
+    @Override
     public ActionResult interact(PlayerEntity player, Hand hand) {
         ActionResult result = ActionResult.FAIL;
 
@@ -191,6 +202,9 @@ public class Mech extends Entity implements GeoEntity {
                 }
 
                 result = ActionResult.SUCCESS;
+            } else if (this.getControllingPassenger() == null && player.isSneaking() && player.getMainHandStack().isEmpty()) {
+                this.remove(RemovalReason.DISCARDED);
+                player.getInventory().setStack(player.getInventory().selectedSlot, JimMechItems.MECH.getDefaultStack());
             }
         }
 
@@ -259,7 +273,7 @@ public class Mech extends Entity implements GeoEntity {
             } else {
                 player.setYaw(this.getYaw());
 
-                if (ClientUtils.getClientPlayer() != player) {
+                if (this.getWorld().isClient() && ClientUtils.getClientPlayer() != player) {
                     if (MathHelper.abs((float) (clientX - this.getX())) >= 0.1 || MathHelper.abs((float) (clientZ - this.getZ())) >= 0.1) {
                         ticks_walking++;
                     } else {
@@ -420,7 +434,7 @@ public class Mech extends Entity implements GeoEntity {
                 return animationState.setAndContinue(DefaultAnimations.FLY);
             }
 
-            if (ClientUtils.getClientPlayer() == this.getControllingPassenger() ?
+            if (this.getWorld().isClient() && ClientUtils.getClientPlayer() == this.getControllingPassenger() ?
                     this.getControllingPassenger() instanceof PlayerEntity player && shouldMove(player) :
                     MathHelper.abs((float) (clientX - this.getX())) >= 0.1 || MathHelper.abs((float) (clientZ - this.getZ())) >= 0.1) {
 
