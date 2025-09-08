@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "B": {"item": "minecraft:netherite_block"},
+    "N": {"item": "minecraft:netherite_ingot"},
+    "S": {"item": "minecraft:nether_star"},
+    "E": {"item": "minecraft:emerald"},
+    "G": {"item": "minecraft:glass_pane"},
+    "F": {"item": "minecraft:fire_charge"}
+  },
+  "pattern": [
+    "EGE",
+    "BSB",
+    "NFN"
+  ],
+  "result": {
+    "count": 1,
+    "item": "jim_mech:mech"
+  }
+}
