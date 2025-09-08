@@ -3,11 +3,11 @@
   "id": "jimmech",
   "version": "${version}",
   "name": "JimMech",
-  "description": "Adds a mech woo made for itsJim competition",
-  "authors": [],
+  "description": "Adds a Mech to the game (made for an itsJim modding competition)",
+  "authors": ["Mishkis"],
   "contact": {},
   "license": "MIT",
-  "icon": "assets/jimmech/icon.png",
+  "icon": "assets/jim_mech/icon.png",
   "environment": "*",
   "entrypoints": {
     "fabric-datagen": [
@@ -31,5 +31,12 @@
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
     "minecraft": "${minecraft_version}"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.source": "https://github.com/Mishkis/jim-mech"
+      }
+    }
   }
 }
